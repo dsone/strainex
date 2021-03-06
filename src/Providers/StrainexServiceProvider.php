@@ -60,8 +60,6 @@ class StrainexServiceProvider extends ServiceProvider
 	private function extendExceptionHandler()
 	{
 		if (!config('strainex.disable', false)) {
-			$_SERVER['HTTP_REFERER'] = 'test';
-
 			$this->app->extend(ExceptionHandler::class, function(ExceptionHandler $handler, $app) {
 				return new StrainexDecorator($handler, $app[StrainexRepository::class]);
 			});
@@ -79,7 +77,7 @@ class StrainexServiceProvider extends ServiceProvider
 
 		if ($ip && Redis::get(config('strainex.redis_string', 'strainex:ip:ban:') . $ip)) {
 			// When in production mode -> block request entirely
-			if (config('app.env') == 'local') {
+			if (config('app.env') !== 'local') {
 				StrainexDecorator::$strainex_abort = true;
 
 				abort(config('strainex.blocked_status'));
