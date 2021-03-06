@@ -1,0 +1,30 @@
+{
+	"name": "dsone/strainex",
+	"type": "library",
+	"license": "MIT",
+	"description": "",
+	"authors": [
+		{
+			"name": "dsone",
+			"email": "dsone@users.noreply.github.com"
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"Dsone\\ExceptionHandler\\": "src"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Dsone\\ExceptionHandler\\Providers\\StrainexServiceProvider"
+			]
+		}
+	},
+	"require": {
+		"predis/predis": "^1.1",
+		"nesbot/carbon": "^2.31",
+		"illuminate/redis": "^8.0",
+		"illuminate/support": "^8.0"
+	}
+}
