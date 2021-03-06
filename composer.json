@@ -14,6 +14,14 @@
 			"Dsone\\ExceptionHandler\\": "src"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"Dsone\\ExceptionHandler\\": "tests"
+		}
+	},
+	"scripts": {
+		"test": "phpunit tests"
+	},
 	"extra": {
 		"laravel": {
 			"providers": [
@@ -26,5 +34,10 @@
 		"nesbot/carbon": "^2.31",
 		"illuminate/redis": "^8.0",
 		"illuminate/support": "^8.0"
+	},
+	"require-dev": {
+		"orchestra/testbench": "^6.0",
+		"phpunit/phpunit": "^8.0|^9.0",
+		"mockery/mockery": "^1.0"
 	}
 }
