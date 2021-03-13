@@ -77,12 +77,8 @@ class StrainexDecorator implements ExceptionHandler
 	private function filterEvent(Throwable $exception) {
 		self::$strainex_abort = true;
 
-		$requestUrl = Request::url();
-		$preg = '/' . implode('|', config('strainex.filters.url', [ '.*' ])) . '/ims';
-		$matched = preg_match($preg, $requestUrl, $match, PREG_UNMATCHED_AS_NULL);
-
-		$referer = $_SERVER['HTTP_REFERER'] ?? null;
-		if (!$matched && $referer) {
+		$referer = $_SERVER['HTTP_REFERER'] ?? false;
+		if ($referer) {
 			$referer = str_replace(['https://', 'http://'], '', $referer);
 			$filterReferer = config('strainex.filters.referer', []);
 			$mapReferer = [];
@@ -90,14 +86,18 @@ class StrainexDecorator implements ExceptionHandler
 				$mapReferer[$ref] = 1;
 			}
 
-			if ($mapReferer[$referer]) {
+			if (isset($mapReferer[$referer])) {
 				$referer = true;
 			} else {
 				$referer = false;
 			}
 		}
 
-		if ($matched || $referer) {
+		$requestUrl = Request::url();
+		$preg = '/' . implode('|', config('strainex.filters.url', [ '.*' ])) . '/ims';
+		$urlMatched = preg_match($preg, $requestUrl, $match, PREG_UNMATCHED_AS_NULL);	
+
+		if ($urlMatched || $referer) {
 			// Block IP
 			if (config('strainex.block_requests', false)) {
 				$ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
@@ -122,7 +122,7 @@ class StrainexDecorator implements ExceptionHandler
 					// Invoke optional callback
 					$callback = config('strainex.callbacks.blocked', false);
 					if ($callback && is_callable($callback)) {
-						$callback($exception, $data, $matched ? 1 : 2);
+						$callback($exception, $data, !$referer ? 1 : 2);
 					}
 
 					// Trigger new error, going back to $this->report, returning early because !!$strainex_abort
@@ -133,7 +133,7 @@ class StrainexDecorator implements ExceptionHandler
 				// Invoke optional callback
 				$callback = config('strainex.callbacks.filtered', false);
 				if ($callback && is_callable($callback)) {
-					$callback($exception, $match ? 1 : 2);
+					$callback($exception, !$referer ? 1 : 2);
 				}
 
 				// Trigger new error, going back to $this->report, returning early because !!$strainex_abort
