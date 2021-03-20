@@ -82,7 +82,7 @@ class StrainexDecorator implements ExceptionHandler
 			$referer = str_replace(['https://', 'http://'], '', $referer);
 			$filterReferer = config('strainex.filters.referer', []);
 			$mapReferer = [];
-			if (isset($mapReferer[0])) {  // sequential array
+			if (isset($filterReferer[0])) {  // sequential array
 				foreach ($filterReferer as $ref) {
 					$mapReferer[$ref] = 1;
 				}
@@ -98,8 +98,8 @@ class StrainexDecorator implements ExceptionHandler
 		}
 
 		$requestUrl = Request::url();
-		$preg = '/' . implode('|', config('strainex.filters.url', [ '.*' ])) . '/ims';
-		$urlMatched = preg_match($preg, $requestUrl, $match, PREG_UNMATCHED_AS_NULL);	
+		$preg = '/' . implode('|', config('strainex.filters.url', [ '_____' ])) . '/ims';
+		$urlMatched = preg_match($preg, $requestUrl, $match, PREG_UNMATCHED_AS_NULL);
 
 		if ($urlMatched || $referer) {
 			// Block IP
@@ -129,6 +129,8 @@ class StrainexDecorator implements ExceptionHandler
 						$callback($exception, $data, !$referer ? 1 : 2);
 					}
 
+					// Exit
+					if (config('strainex.always_exit', false)) { exit(0); }
 					// Trigger new error, going back to $this->report, returning early because !!$strainex_abort
 					abort(config('strainex.blocked_status'));
 				}
@@ -140,6 +142,8 @@ class StrainexDecorator implements ExceptionHandler
 					$callback($exception, !$referer ? 1 : 2);
 				}
 
+				// Exit
+				if (config('strainex.always_exit', false)) { exit(0); }
 				// Trigger new error, going back to $this->report, returning early because !!$strainex_abort
 				abort(config('strainex.filtered_status'));
 			}

@@ -78,8 +78,9 @@ class StrainexServiceProvider extends ServiceProvider
 		if ($ip && Redis::get(config('strainex.redis_string', 'strainex:ip:ban:') . $ip)) {
 			// When in production mode -> block request entirely
 			if (config('app.env') !== 'local') {
-				StrainexDecorator::$strainex_abort = true;
+				if (config('strainex.always_exit', false)) { exit(0); }
 
+				StrainexDecorator::$strainex_abort = true;
 				abort(config('strainex.blocked_status'));
 			}
 

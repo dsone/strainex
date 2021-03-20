@@ -110,10 +110,19 @@ return [
 	 * Make sure to use an HTML status code that is supported by Laravel.
 	 * Not supported status codes throw a "message not found" Exception, ie status code 418 is not supported.
 	 * 
-	 * Default: 503 - Maintenance
+	 * Default: 503 - Maintenance for SEO spam filtered
+	 * Default: 500 - Maintenance for blocked (subsequent) requests
 	 */
 	'filtered_status' => env('STRAINEX_FILTERED_STATUS', 503),
 	'blocked_status' => env('STRAINEX_BLOCKED_STATUS', 500),
+
+	/**
+	 * If you prefer to not return any error codes,
+	 * you can also simply `exit`.
+	 * 
+	 * Above defined callbacks are not affected by this setting.
+	 */
+	'always_exit' => env('STRAINEX_ALWAYS_EXIT', false),
 
 	/**
 	 * Should requests be blocked.
