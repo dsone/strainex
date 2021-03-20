@@ -82,8 +82,12 @@ class StrainexDecorator implements ExceptionHandler
 			$referer = str_replace(['https://', 'http://'], '', $referer);
 			$filterReferer = config('strainex.filters.referer', []);
 			$mapReferer = [];
-			foreach ($filterReferer as $ref) {
-				$mapReferer[$ref] = 1;
+			if (isset($mapReferer[0])) {  // sequential array
+				foreach ($filterReferer as $ref) {
+					$mapReferer[$ref] = 1;
+				}
+			} else {  // assume map
+				$mapReferer = $filterReferer;
 			}
 
 			if (isset($mapReferer[$referer])) {
