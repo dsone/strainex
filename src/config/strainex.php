@@ -16,6 +16,11 @@ return [
 		/**
 		 * A list of referer to filter out.
 		 * Leave out any "http(s)://".
+		 * 
+		 * If you have hundreds or perhaps thousands of referers to filter,
+		 * you might speed up things within Strainex by providing a map ("lookup table") instead of a sequential array.
+		 * Sequential: [ 'A', 'B', 'C', 'D', 'E' ] - totally fine if list is not too long
+		 * Map: [ 'A' => 1, 'B' => 1, 'C' => 1, 'D' => 1, 'E' => 1 ] - a lot better for large lists
 		 */
 		'referer' => [
 			
@@ -26,35 +31,42 @@ return [
 		 * Case insensitive. Will be automatically concatenated with "|".
 		 */
 		'url' => [
+			'\.env',
+			'\.git',
+
+			'admin\.txt',
+			'admins\.txt',
+			'admin\/includes',
+			'admin\/index\.php',
+			'administrator\/index\.php',
+			'admin\/view\/',
+
+			'composer\.json',
+			'config\.bak\.php',
+			'debug\.xml',
+
+			'emergency\.php',
+			'execute-solution',
+			'extjs\.php',
+
+			'good\.txt',
+			'install\.xml',
+			'misc\/ajax\.js',
+
+			'php_info',
+			'phpinfo',
+			'phptest',
+			'phpunit',
+
+			'shell\.txt',
+			'toc\.json',
+			'upload\.php',
+
 			'wp-includes',
 			'wp-admin',
 			'wp-login',
 			'wp-content',
 			'wp-good\.txt',
-			'emergency\.php',
-			'shell\.txt',
-			'admin\.txt',
-			'admins\.txt',
-			'good\.txt',
-			'config\.bak\.php',
-			'\.env',
-			'upload\.php',
-			'phpunit',
-			'admin\/includes',
-			'admin\/view\/',
-			'misc\/ajax\.js',
-			'debug\.xml',
-			'install\.xml',
-			'toc\.json',
-			'\.git',
-			'composer\.json',
-			'execute-solution',
-			'phpinfo',
-			'php_info',
-			'phptest',
-			'administrator\/index\.php',
-			'admin\/index\.php',
-			'extjs\.php'
 		]
 	],
 
@@ -63,11 +75,18 @@ return [
 	 * 
 	 * Can be a class with a _static_ `method` in the form of
 	 *   [ MyExceptionEvent:class, 'method' ].
+	 * 
+	 * Beware that when a second request for an IP blocked entity comes along,
+	 * the invoked callback might not be able to use all of Laravel's features,
+	 * since Strainex tries to leave the boostrapping asap. 
 	 */
 	'callbacks' => [
 		/**
 		 * A request was blocked, only invokable if block_requests is true.
-		 * The callable gets two parameter:
+		 * In determining the $type SEO referer takes precedence over a URL match.
+		 * Even though both types might occur for a single request.
+		 * 
+		 * The callable gets three parameters:
 		 * $exception	Throwable, the original exception
 		 * $data		Array, the data that is written to Redis, including IP, HTTP_CF_IPCOUNTRY if present and user agent
 		 * $type		int, 1 if URL match, 2 if referer match

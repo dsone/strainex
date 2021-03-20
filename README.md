@@ -1,36 +1,57 @@
 # Strainex
 
-Your website gets countless SEO referer spam in your logs?  
-Autonomous vulnerability scanners frequently and regularly scan your website for the same useless things?  
-You have custom (error) logging throughout your application?  
-There's an absurd amount of noise for the yet bazillionth time scan of a Wordpress vulnerability even though you have no Wordpress installed?  
-All you try to do is get those recurring bugs fixed that legit clients produce but you have to wade through thousands of lines of logs?
+Your website gets countless 404 SEO referer spam in your logs? Autonomous vulnerability scanners frequently and regularly scan your website for the same useless things that aren't installed? You have custom (error) logging throughout your application to catch exceptions?  
+There's an absurd amount of noise for the yet bazillionth time scan of a technologoy you have not even installed? You are using Laravel?  
+Strainex might be of service to you.
 
-## Reducing noise
-Strainex is not meant to make your website more secure.  
-But Strainex is an attempt at reducing that noise in your (custom) logging by filtering out the most common attemps.  
-It's customizable so you can add that one scanner that visits you on a daily basis with new IPs by blacklisting specific URLs, like "wp-content", or ".env" and abort early.  
-With Strainex you can keep those logs of yours a bit more clean by reducing the noise by easily 90%.
+### Beware
+_Strainex is not meant to make your website more secure._
 
-## How it works
-When an entity requests a URL from your Laravel website, like `example.com/wp-admin`, it usually returns a 404.  
-Within Laravel, a 404 is an HttpException. It is thrown somewhere in your application for a not found route.  
-The default Exception handler in `app\Exceptions\Handler` is invoked at last (unless re-configured with other handlers), does your logging, sends mails or whatever you have configured in there.  
-The entity gets to see only the 404 and goes ahead to request the next URL like `example.com/vendor/phpunit`, rinse and repeat.
+If you want to make your website more secure than this is not the package you're looking for.  
+In such cases a honeypot setup, fail2ban, or similar tools might be better suited for your use case.
+
+## What Strainex does: reducing noise
+Strainex is an attempt at reducing noise in your (custom) logging for when errors occur. By filtering out common SEO spam and scan attempts that end in a 404 most of the times in an easy way.  
+It's customizable, so you can add arbitrary URL requests to "block" further requests from that one entity visiting you on a daily basis.  
+Blocking here means two things:
+1. Preventing any more exception handlers to run, which in turn would trigger your custom logging/handling (basically "filtering")
+2. Optionally prevent any further requests from the same IP for a configurable time (proper "blocking")
   
-Strainex does not change the normal behaviour of how Laravel handles the exceptions. Instead, it adds onto that by intercepting those 404, checks if certain configured routes were accessed or specific referer are detected and aborts itself before invoking any other exception handlers.
+With Strainex you can keep those logs of yours a bit more clean by reducing the noise easily by 90% that way.
+
+### How it works
+When an entity requests a URL from your Laravel website, like `example.com/wp-admin`, it usually returns a 404 in a Laravel context. Within Laravel, a 404 is an HttpException. It is thrown somewhere in your application for a not found route.
   
-If blocking is enabled, the next request is checked within the boot process of Laravel, if the entity is known to be blocked (there's a Redis entry for that entity's IP), it aborts before any new exception is thrown, keeping your logs clean.
+The default Exception handler in `app\Exceptions\Handler` is invoked at last (unless re-configured with other handlers), doing whatever you have configured in there for such cases. The entity gets to see the 404 only (or any other triggered exception code) and goes ahead to request the next URL like `example.com/vendor/phpunit`, rinse and repeat. Filling up your logs with noise.
+  
+Strainex does not change the normal behaviour of how Laravel handles these exceptions. Instead, it adds onto that by wrapping itself around these exceptions (404 and other HttpExceptions) via a Decorator Pattern, checks if certain configured routes were accessed or specific referer are detected and aborts itself before invoking any other exception handlers.
+  
+If blocking is enabled, Strainex saves the IP in a Redis instance. The next request from that IP is checked within the boot process of Laravel. If the request is from a known entity, Strainex aborts the boot process. Strainex returns a configurable response code (default 500 for blocked, 503 for filtered) or simply exits. Keeping your logs clean(er) and your app from bootstrapping any further.
 
 ## Requirements
+* PHP ^7.3
 * Laravel 8.*
 * Redis _(optional)_
   
-If you want to also block visitors, you need Redis setup on your machine. 
-In that case any subsequent visit of a previously blocked entity is being prevented by aborting early.
+If you want to also block entities, you need Redis setup on your machine. 
+In that case any subsequent request of a previously blocked entity is being prevented by aborting early.
 
 ## Installation
 
-1. `composer require dsone/strainex`  
-2. Publish config of `Dsone\ExceptionHandler\Providers\StrainexServiceProvider` via  
+1. Add this repository to your composer json:
+	```
+	"repositories": [
+		{ "type": "vcs", "url": "https://github.com/dsone/strainex" }
+	]
+	```
+2. Install via 
+	`composer require dsone/strainex`
+3. Publish config of `Dsone\ExceptionHandler\Providers\StrainexServiceProvider` via
 	`php artisan vendor:publish` 
+4. Read commentary in `config/strainex.php` and edit settings for the URL and referer to filter out
+5. Edit .env vars as you see fit or leave defaults as defined in the config file
+
+## Credit
+...where credit is due.
+  
+The Decorator Pattern around exception handling in Laravel was adapted from [cerbero90/exception-handler](https://github.com/cerbero90/exception-handler).
