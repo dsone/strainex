@@ -30,6 +30,7 @@
 		}
 	},
 	"require": {
+		"php": "^7.3",
 		"predis/predis": "^1.1",
 		"nesbot/carbon": "^2.31",
 		"illuminate/redis": "^8.0",
