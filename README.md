@@ -1,7 +1,7 @@
 # Strainex
 
 Your website gets countless 404 SEO referer spam in your logs? Autonomous vulnerability scanners frequently and regularly scan your website for the same useless things that aren't installed? You have custom (error) logging throughout your application to catch exceptions?  
-There's an absurd amount of noise for the yet bazillionth time scan of a technologoy you have not even installed? You are using Laravel?  
+There's an absurd amount of noise for the yet bazillionth time scan of a technology you have not even installed? You are using Laravel?  
 Strainex might be of service to you.
 
 ### Beware
