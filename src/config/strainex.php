@@ -8,6 +8,16 @@ return [
 	'disable' => env('STRAINEX_DISABLE', false),
 
 	/**
+	 * Hash IPs before using them, ie saving to Redis.
+	 */
+	'hash_ip' => env('STRAINEX_HASHIP', false),
+	/**
+	 * The salt to use for hashing, for PHP8 compatibility make sure to provide a salt.
+	 * For hashing, bcrypt is used.
+	 */
+	'hash_salt' => env('STRAINEX_SALT', false),
+
+	/**
 	 * List of available filters.
 	 * 
 	 * Currently that is referer and accessed URLs.
@@ -15,7 +25,7 @@ return [
 	'filters' => [
 		/**
 		 * A list of referer to filter out.
-		 * Leave out any "http(s)://".
+		 * Leave out any leading "http(s)://".
 		 * 
 		 * If you have hundreds or perhaps thousands of referers to filter,
 		 * you might speed up things within Strainex by providing a map ("lookup table") instead of a sequential array.
@@ -23,6 +33,13 @@ return [
 		 * Map: [ 'A' => 1, 'B' => 1, 'C' => 1, 'D' => 1, 'E' => 1 ] - a lot better for large lists
 		 */
 		'referer' => [
+			
+		],
+		/**
+		 * Similar to the referers but for the User-Agent strings.
+		 * userAgents are checked in lowercase, hence use lowercase here.
+		 */
+		'userAgents' => [
 			
 		],
 		/**
@@ -83,18 +100,19 @@ return [
 	'callbacks' => [
 		/**
 		 * A request was blocked, only invokable if block_requests is true.
-		 * In determining the $type SEO referer takes precedence over a URL match.
-		 * Even though both types might occur for a single request.
+		 * The checks to block are in this order: SEO (bit 1), userAgent (bit 2), URL (bit 4).
+		 * $criteriaBits will be a bitmask of what matched the criteria to block the entity.
+		 * An entity provoking a 404 with a userAgent match will therefore have the bit (2 | 4) = 6.
 		 * 
 		 * The callable gets three parameters:
-		 * $exception	Throwable, the original exception
-		 * $data		Array, the data that is written to Redis, including IP, HTTP_CF_IPCOUNTRY if present and user agent
-		 * $type		int, 1 if URL match, 2 if referer match
+		 * $exception		Throwable: the original exception
+		 * $data			Array: the data that is written to Redis, including IP, HTTP_CF_IPCOUNTRY if present and user agent
+		 * $criteriaBits	int: bitmask of matched filter criteria
 		 */
 		'blocked'	=> false,
 		/**
 		 * Almost the same as blocked, just that this is only invokable if block_requests is false.
-		 * The callable gets only the original $exception and $type as parameter.
+		 * The callable gets only the original $exception and $criteriaBits as parameter.
 		 */
 		'filtered'	=> false,
 		/**

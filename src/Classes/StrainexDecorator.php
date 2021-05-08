@@ -1,6 +1,6 @@
 <?php
 
-namespace Dsone\ExceptionHandler\Classes;
+namespace Dsone\Strainex\Classes;
 
 use Request;
 use Throwable;
@@ -26,7 +26,7 @@ class StrainexDecorator implements ExceptionHandler
 	/**
 	 * The custom handlers repository.
 	 *
-	 * @var \Cerbero\ExceptionHandler\HandlersRepository
+	 * @var \Dsone\Strainex\Classes\StrainexRepository
 	 */
 	protected $repository;
 
@@ -34,7 +34,7 @@ class StrainexDecorator implements ExceptionHandler
 	 * Set the dependencies.
 	 *
 	 * @param \Illuminate\Contracts\Debug\ExceptionHandler $defaultHandler
-	 * @param \Cerbero\ExceptionHandler\HandlersRepository $repository
+	 * @param \Dsone\Strainex\Classes\StrainexRepository $repository
 	 */
 	public function __construct(ExceptionHandler $defaultHandler, StrainexRepository $repository)
 	{
@@ -68,6 +68,25 @@ class StrainexDecorator implements ExceptionHandler
 	}
 
 	/**
+	 * Checks if a needle matches (exists in) a haystack.
+	 *
+	 * @param	string	$needle		The needle to check.
+	 * @param	Array	$haystack	Either a sequential array or a map to check.
+	 * @return	boolean				True on match, false otherwise.
+	 */
+	private function isMatch(string $needle, Array $haystack) {
+		if (isset($mapping[0])) {  // sequential array
+			return in_array($needle, $haystack);
+		}
+
+		if (isset($haystack[$needle])) {  // assume map
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Filter out configured events by requested URL or referer.
 	 * Aborts before any other exception handler will be called if exception is a filtered event.
 	 *
@@ -79,41 +98,40 @@ class StrainexDecorator implements ExceptionHandler
 
 		$referer = $_SERVER['HTTP_REFERER'] ?? false;
 		if ($referer) {
-			$referer = str_replace(['https://', 'http://'], '', $referer);
+			$referer = trim(str_replace(['https://', 'http://'], '', $referer));
 			$filterReferer = config('strainex.filters.referer', []);
-			$mapReferer = [];
-			if (isset($filterReferer[0])) {  // sequential array
-				foreach ($filterReferer as $ref) {
-					$mapReferer[$ref] = 1;
-				}
-			} else {  // assume map
-				$mapReferer = $filterReferer;
-			}
+			$referer = $this->isMatch($referer, $filterReferer);
+		}
 
-			if (isset($mapReferer[$referer])) {
-				$referer = true;
-			} else {
-				$referer = false;
-			}
+		$userAgent = $_SERVER['HTTP_SEC_CH_UA'] ?? $_SERVER['HTTP_USER_AGENT'] ?? false;
+		if ($userAgent) {
+			$userAgent = strtolower(trim($userAgent));
+			$filterUserAgents = config('strainex.filters.userAgents', []);
+			$userAgent = $this->isMatch($userAgent, $filterUserAgents);
 		}
 
 		$requestUrl = Request::url();
 		$preg = '/' . implode('|', config('strainex.filters.url', [ '_____' ])) . '/ims';
 		$urlMatched = preg_match($preg, $requestUrl, $match, PREG_UNMATCHED_AS_NULL);
 
-		if ($urlMatched || $referer) {
+		if ($urlMatched || $referer || $userAgent) {
+			$criteriaBits = (!$urlMatched ? 0 : 1) + (!$referer ? 0 : 2) + (!$userAgent ? 0 : 4);
+
 			// Block IP
 			if (config('strainex.block_requests', false)) {
 				$ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
 				if ($ip) {
+					$ip = config('strainex.hash_ip', false) ? crypt($ip, config('strainex.hash_salt', '')) : $ip;
+
 					$data = [
-						'ip'		=> $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null,
-						'expire'	=> Carbon::now()->getTimestamp() + (config('app.env') === 'local' ? 15 : 21600),  // expiration date
-						'userAgent'	=> $_SERVER['HTTP_SEC_CH_UA'] ?? $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
-						'country'	=> $_SERVER['HTTP_CF_IPCOUNTRY'] ?? 'Unknown',
-						'url'		=> $requestUrl,
-						'code'		=> $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface ? $exception->getStatusCode() : null,
-						'time'		=> Carbon::now()->getTimestamp(),
+						'ip'			=> $ip,
+						'expire'		=> Carbon::now()->getTimestamp() + (config('app.env') === 'local' ? 15 : 21600),  // expiration date
+						'userAgent'		=> $_SERVER['HTTP_SEC_CH_UA'] ?? $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
+						'country'		=> $_SERVER['HTTP_CF_IPCOUNTRY'] ?? 'Unknown',
+						'url'			=> $requestUrl,
+						'code'			=> $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface ? $exception->getStatusCode() : null,
+						'criteriaBits'	=> $criteriaBits,
+						'time'			=> Carbon::now()->getTimestamp(),
 					];
 
 					Redis::set(
@@ -126,7 +144,7 @@ class StrainexDecorator implements ExceptionHandler
 					// Invoke optional callback
 					$callback = config('strainex.callbacks.blocked', false);
 					if ($callback && is_callable($callback)) {
-						$callback($exception, $data, !$referer ? 1 : 2);
+						$callback($exception, $data, $criteriaBits);
 					}
 
 					// Exit
@@ -139,7 +157,7 @@ class StrainexDecorator implements ExceptionHandler
 				// Invoke optional callback
 				$callback = config('strainex.callbacks.filtered', false);
 				if ($callback && is_callable($callback)) {
-					$callback($exception, !$referer ? 1 : 2);
+					$callback($exception, $criteriaBits);
 				}
 
 				// Exit

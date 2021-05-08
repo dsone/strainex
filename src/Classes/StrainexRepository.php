@@ -1,6 +1,6 @@
 <?php
 
-namespace Dsone\ExceptionHandler\Classes;
+namespace Dsone\Strainex\Classes;
 
 use Throwable;
 use ReflectionFunction;
