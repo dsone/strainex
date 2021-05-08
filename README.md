@@ -8,7 +8,7 @@ Strainex might be of service to you.
 _Strainex is not meant to make your website more secure._
 
 If you want to make your website more secure than this is not the package you're looking for.  
-In such cases a honeypot setup, fail2ban, or similar tools might be better suited for your use case.
+In such cases a honeypot setup, fail2ban, plain DENY/ALLOW in your .htaccess or similar tools might be better suited for your use case.
 
 ## What Strainex does: reducing noise
 Strainex is an attempt at reducing noise in your (custom) logging for when errors occur. By filtering out common SEO spam and scan attempts that end in a 404 most of the times in an easy way.  
@@ -24,7 +24,7 @@ When an entity requests a URL from your Laravel website, like `example.com/wp-ad
   
 The default Exception handler in `app\Exceptions\Handler` is invoked at last (unless re-configured with other handlers), doing whatever you have configured in there for such cases. The entity gets to see the 404 only (or any other triggered exception code) and goes ahead to request the next URL like `example.com/vendor/phpunit`, rinse and repeat. Filling up your logs with noise.
   
-Strainex does not change the normal behaviour of how Laravel handles these exceptions. Instead, it adds onto that by wrapping itself around these exceptions (404 and other HttpExceptions) via a Decorator Pattern, checks if certain configured routes were accessed or specific referer are detected and aborts itself before invoking any other exception handlers.
+Strainex does not change the normal behaviour of how Laravel handles these exceptions. Instead, it adds onto that by wrapping itself around these exceptions (404 and other HttpExceptions) via a Decorator Pattern, checks if certain configured routes were accessed, specific referer or user agents are detected and aborts itself before invoking any other exception handlers.
   
 If blocking is enabled, Strainex saves the IP in a Redis instance. The next request from that IP is checked within the boot process of Laravel. If the request is from a known entity, Strainex aborts the boot process. Strainex returns a configurable response code (default 500 for blocked, 503 for filtered) or simply exits. Keeping your logs clean(er) and your app from bootstrapping any further.
 
@@ -46,7 +46,7 @@ In that case any subsequent request of a previously blocked entity is being prev
 	```
 2. Install via 
 	`composer require dsone/strainex`
-3. Publish config of `Dsone\ExceptionHandler\Providers\StrainexServiceProvider` via
+3. Publish config of `Dsone\Strainex\Providers\StrainexServiceProvider` via
 	`php artisan vendor:publish` 
 4. Read commentary in `config/strainex.php` and edit settings for the URL and referer to filter out
 5. Edit .env vars as you see fit or leave defaults as defined in the config file

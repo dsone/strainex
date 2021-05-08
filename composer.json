@@ -11,12 +11,12 @@
 	],
 	"autoload": {
 		"psr-4": {
-			"Dsone\\ExceptionHandler\\": "src"
+			"Dsone\\Strainex\\": "src"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Test\\": "tests"
+			"Dsone\\Strainex\\Tests\\": "tests"
 		}
 	},
 	"scripts": {
@@ -25,7 +25,7 @@
 	"extra": {
 		"laravel": {
 			"providers": [
-				"Dsone\\ExceptionHandler\\Providers\\StrainexServiceProvider"
+				"Dsone\\Strainex\\Providers\\StrainexServiceProvider"
 			]
 		}
 	},

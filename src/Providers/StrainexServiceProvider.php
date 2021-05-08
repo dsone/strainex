@@ -1,13 +1,13 @@
 <?php
 
-namespace Dsone\ExceptionHandler\Providers;
+namespace Dsone\Strainex\Providers;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Debug\ExceptionHandler;
-use Dsone\ExceptionHandler\Classes\StrainexDecorator;
-use Dsone\ExceptionHandler\Classes\StrainexRepository;
+use Dsone\Strainex\Classes\StrainexDecorator;
+use Dsone\Strainex\Classes\StrainexRepository;
 
 /**
  * The exception handler service provider.
@@ -75,20 +75,23 @@ class StrainexServiceProvider extends ServiceProvider
 	private function abortIfBlocked() {
 		$ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
 
-		if ($ip && Redis::get(config('strainex.redis_string', 'strainex:ip:ban:') . $ip)) {
-			// When in production mode -> block request entirely
-			if (config('app.env') !== 'local') {
-				if (config('strainex.always_exit', false)) { exit(0); }
+		if ($ip) {
+			$ip = config('strainex.hash_ip', false) ? crypt($ip, config('strainex.hash_salt', '')) : $ip;
+			if (Redis::get(config('strainex.redis_string', 'strainex:ip:ban:') . $ip)) {
+				// When in production mode -> block request entirely
+				if (config('app.env') !== 'local') {
+					if (config('strainex.always_exit', false)) { exit(0); }
 
-				StrainexDecorator::$strainex_abort = true;
-				abort(config('strainex.blocked_status'));
+					StrainexDecorator::$strainex_abort = true;
+					abort(config('strainex.blocked_status'));
+				}
+
+				$data = unserialize(Redis::get(config('strainex.redis_string', 'strainex:ip:ban:') . $ip));
+				// Otherwise, display more info
+				dd(
+					'Blocked for ' . ($data['expire']-Carbon::now()->getTimestamp()) . ' more second(s)'
+				);
 			}
-
-			$data = unserialize(Redis::get(config('strainex.redis_string', 'strainex:ip:ban:') . $ip));
-			// Otherwise, display more info
-			dd(
-				'Blocked for ' . ($data['expire']-Carbon::now()->getTimestamp()) . ' more second(s)'
-			);
 		}
 	}
 }
