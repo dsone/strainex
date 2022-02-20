@@ -29,8 +29,8 @@ Strainex does not change the normal behaviour of how Laravel handles these excep
 If blocking is enabled, Strainex saves the IP in a Redis instance. The next request from that IP is checked within the boot process of Laravel. If the request is from a known entity, Strainex aborts the boot process. Strainex returns a configurable response code (default 500 for blocked, 503 for filtered) or simply exits. Keeping your logs clean(er) and your app from bootstrapping any further.
 
 ## Requirements
-* PHP ^7.3
-* Laravel 8.*
+* PHP >=7.3
+* Laravel >8.*
 * Redis _(optional)_
   
 If you want to also block entities, you need Redis setup on your machine. 

@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.3.1 - 2022-02-20
+
+- Update for Laravel 9 compatibility
+
 ## 0.3 - 2021-05-08
 
 - [ch445] Add option for IP hashing
