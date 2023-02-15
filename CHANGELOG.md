@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.4 - 2023-02-15
+
+- Raise minimum Laravel version to 10
+
 ## 0.3.1 - 2022-02-20
 
 - Update for Laravel 9 compatibility
