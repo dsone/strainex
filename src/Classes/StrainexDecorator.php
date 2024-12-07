@@ -5,6 +5,7 @@ namespace Dsone\Strainex\Classes;
 use Request;
 use Throwable;
 use Carbon\Carbon;
+use ReflectionMethod;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 
@@ -143,12 +144,12 @@ class StrainexDecorator implements ExceptionHandler
 
 					// Invoke optional callback
 					$callback = config('strainex.callbacks.blocked', false);
-					if ($callback && is_callable($callback)) {
-						$callback($exception, $data, $criteriaBits);
-					}
+					$this->invokeCallback($callback, $exception, $data, $criteriaBits);
 
 					// Exit
-					if (config('strainex.always_exit', false)) { exit(0); }
+					if (config('strainex.always_exit', false)) {
+						exit(0);
+					}
 					// Trigger new error, going back to $this->report, returning early because !!$strainex_abort
 					abort(config('strainex.blocked_status'));
 				}
@@ -156,20 +157,60 @@ class StrainexDecorator implements ExceptionHandler
 			} else {
 				// Invoke optional callback
 				$callback = config('strainex.callbacks.filtered', false);
-				if ($callback && is_callable($callback)) {
-					$callback($exception, $criteriaBits);
-				}
+				$this->invokeCallback($callback, $exception, $criteriaBits);
 
 				// Exit
-				if (config('strainex.always_exit', false)) { exit(0); }
+				if (config('strainex.always_exit', false)) {
+					exit(0);
+				}
 				// Trigger new error, going back to $this->report, returning early because !!$strainex_abort
 				abort(config('strainex.filtered_status'));
 			}
 		} else {
 			// Invoke optional callback
 			$callback = config('strainex.callbacks.passed', false);
-			if ($callback && is_callable($callback)) {
-				$callback($exception);
+			$this->invokeCallback($callback, $exception);
+		}
+	}
+
+	/**
+	 * Invoke a callback, either a single callable or an array of class/method pairs.
+	 * Supports static and non-static methods as well as callable functions.
+	 *
+	 * @param	mixed	$callback		Either a callable or an array of class/method pairs.
+	 * @param	mixed	...$cbParams	Parameters to pass to the callback.
+	 * @return	void
+	 */
+	private function invokeCallback($callback, ...$cbParams) {
+		if (!$callback) {
+			return;
+		}
+
+		if ($callback && is_callable($callback)) {
+			$callback(...$cbParams);
+		} else if (is_array($callback)) {
+			foreach ($callback as $cb) {
+				if (is_callable($cb)) {
+					$cb(...$cbParams);
+					continue;
+				}
+				if (!is_array($cb)) {
+					continue;
+				}
+				list($class, $method) = $cb;
+
+				if (class_exists($class)) {
+					if (method_exists($class, $method)) {
+						$reflection = new ReflectionMethod($class, $method);
+
+						if ($reflection->isStatic()) {
+							$class::$method(...$cbParams);
+						} else {
+							$instance = new $class();
+							$instance->$method(...$cbParams);
+						}
+					}
+				}
 			}
 		}
 	}
