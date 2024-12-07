@@ -75,7 +75,7 @@ class StrainexDecorator implements ExceptionHandler
 	 * @return	boolean				True on match, false otherwise.
 	 */
 	private function isMatch(string $needle, Array $haystack) {
-		if (isset($mapping[0])) {  // sequential array
+		if (isset($haystack[0])) {  // sequential array
 			return in_array($needle, $haystack);
 		}
 
@@ -138,7 +138,7 @@ class StrainexDecorator implements ExceptionHandler
 						config('strainex.redis_string', 'strainex:ip:ban:') . $ip,
 						serialize($data),
 						'ex',  // define 4th param as seconds
-						(config('app.env', 'production') === 'local' ? 15 : 21600)  // 15s in dev, 6h in non-dev
+						(config('app.env', 'production') === 'local' ? 10 : config('strainex.block_timeout'))  // 10s in dev, 6h in prod
 					);
 
 					// Invoke optional callback
