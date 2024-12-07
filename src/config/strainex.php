@@ -33,14 +33,14 @@ return [
 		 * Map: [ 'A' => 1, 'B' => 1, 'C' => 1, 'D' => 1, 'E' => 1 ] - a lot better for large lists
 		 */
 		'referer' => [
-			
+
 		],
 		/**
 		 * Similar to the referers but for the User-Agent strings.
 		 * userAgents are checked in lowercase, hence use lowercase here.
 		 */
 		'userAgents' => [
-			
+
 		],
 		/**
 		 * RegExp usable partial URL strings.
@@ -90,16 +90,24 @@ return [
 	/**
 	 * Optional callables that are invoked at different states.
 	 * 
-	 * Can be a class with a _static_ `method` in the form of
+	 * Can be a class with a method in the form of
 	 *   [ MyExceptionEvent:class, 'method' ].
+	 * `method` can be static or non-static.
+	 * Examples:
+	 * ```php
+	 * 'blocked' => [ [ App\Utils\StrainexCallbacks::class, 'blocked' ] ]
+	 * 'blocked' => function() { dd('blocked'); }
+	 * 'blocked' => [ function() { dd('blocked') }, [ App\Utils\StrainexCallbacks::class, 'blocked' ] ]
+	 * ```
 	 * 
-	 * Beware that when a second request for an IP blocked entity comes along,
+	 * Beware that when a second request for an IP-blocked-entity comes along,
 	 * the invoked callback might not be able to use all of Laravel's features,
 	 * since Strainex tries to leave the boostrapping asap. 
 	 */
 	'callbacks' => [
 		/**
-		 * A request was blocked, only invokable if block_requests is true.
+		 * A request was blocked, only invokable if `block_requests` is true.
+		 * 
 		 * The checks to block are in this order: SEO (bit 1), userAgent (bit 2), URL (bit 4).
 		 * $criteriaBits will be a bitmask of what matched the criteria to block the entity.
 		 * An entity provoking a 404 with a userAgent match will therefore have the bit (2 | 4) = 6.
@@ -111,13 +119,17 @@ return [
 		 */
 		'blocked'	=> false,
 		/**
-		 * Almost the same as blocked, just that this is only invokable if block_requests is false.
+		 * The replacement callback for when `block_requests` is false.
+		 * If you do not want to block requests directly and automatically, you can use this callback.
+		 * 
 		 * The callable gets only the original $exception and $criteriaBits as parameter.
 		 */
 		'filtered'	=> false,
 		/**
-		 * The negated case of filtered and blocked basically.
-		 * Most useful for debugging purposes.
+		 * Valid requests that are not blocked/filtered but raise an exception anyway.
+		 * 
+		 * Most useful for debugging purposes only or to count errors raised by specific IPs.
+		 * 
 		 * Does not rely on the block_requests setting.
 		 */
 		'passed'	=> false
