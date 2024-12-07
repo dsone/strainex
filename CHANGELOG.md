@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.5.1 - 2024-12-07
+-   Loosen PHP requiremnt to allow for 8.2 or above, making dealing with upgrades easier
+
 ## 0.5 - 2024-12-07
 
 -   Raise minimum Laravel version to 11
