@@ -6,6 +6,7 @@
 -   Raise minimum PHP version to 8.3
 -   Fix `block_timeout` not being used
 -   Fix filter not working correctly with sequential array
+-   Allow callbacks to be callables, or static/instance methods on classes
 
 ## 0.4 - 2023-02-15
 
